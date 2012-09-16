@@ -12,6 +12,9 @@ using System.Threading;
 
 namespace Two_Server
 {
+    /// <summary> 
+    /// Class for the window for the Two Server, extends form. Eventually will be merged with the client
+    /// </summary> 
     public partial class TwoServerWindow : Form
     {
         private readonly Thread _udpThread;
@@ -38,6 +41,11 @@ namespace Two_Server
 
         public delegate void UdpMessageHandler(object m, UdpEvent e);
 
+
+        /// <summary> 
+        /// Constructor for TwoServerWindow, creates udp receptor thread and creates listening soctets, spawns
+        /// a game options window, and prepares the server to accept clients
+        /// </summary> 
         public TwoServerWindow()
         {
             InitializeComponent();
@@ -52,7 +60,8 @@ namespace Two_Server
             }
             catch (Exception)
             {
-                AddText("Local Host not found"); // fail
+                //If the socket can't be created the server can't work
+                AddText("Local Host not found");
                 return;
             }
             IPAddress localIp = null;
@@ -76,10 +85,14 @@ namespace Two_Server
             DownDeck = new Stack<Card>();
             
         }
-
+        /// <summary> 
+        /// The function to be run as a thread for broadcasting the address of the server, for the clients to add to
+        /// active game list.
+        /// </summary> 
         public void BroadcastServerThread()
         {
             UdpClient udpClient = new UdpClient();
+            //On seperate ports to allow for multiple clients running at the same address
             IPEndPoint broadcastEp = new IPEndPoint(IPAddress.Parse("255.255.255.255"), 48485);
             IPEndPoint broadcastEp2 = new IPEndPoint(IPAddress.Parse("255.255.255.255"), 48486);
             IPEndPoint broadcastEp3 = new IPEndPoint(IPAddress.Parse("255.255.255.255"), 48487);
@@ -95,7 +108,10 @@ namespace Two_Server
             }
         }
 
-
+        /// <summary> 
+        /// Method to start the game after clients have joined. Creates the deck of cards to use, shuffles it, deals and sends players
+        /// their card list. Also sets the players turn.
+        /// </summary> 
         public void StartGame()
         {
             DrinkLevel = GameOption.Drink;
@@ -133,8 +149,10 @@ namespace Two_Server
             {
                 SendToAllPlayers("ANIMATION CARDSTO "+p.playerNumber + " 7");
             }
-
         }
+        /// <summary> 
+        /// Sends the list of players in the game to all clients connected
+        /// </summary> 
         public void SendPlayerList()
         {
             string playerString = "";
@@ -146,6 +164,9 @@ namespace Two_Server
             
             SendToAllPlayers(playerString);
         }
+        /// <summary> 
+        /// Resets the game state to default, so that clients can rejoin and the game can be started again.
+        /// </summary> 
         public void RestartGame()
         {
             foreach (TimedEvent timedEvent in TimedEventList)
@@ -159,7 +180,9 @@ namespace Two_Server
             _broadcastThread = new Thread(new ThreadStart(BroadcastServerThread));
             _broadcastThread.Start();
         }
-
+        /// <summary> 
+        /// Returns a set of number cards for deck creation
+        /// </summary> 
         public List<Card> GetNumberCards()
         {
             List<Card> cardList = new List<Card>();
@@ -194,6 +217,9 @@ namespace Two_Server
             }
             return cardList;
         }
+        /// <summary> 
+        /// Returns a set of lightmaster cards for deck creation
+        /// </summary> 
         public List<Card> GetLightMasterCards()
         {
             List<Card> cardList = new List<Card>();
@@ -226,7 +252,9 @@ namespace Two_Server
             }
             return cardList;
         }
-
+        /// <summary> 
+        /// Returns a set of princess drink cards for deck creation
+        /// </summary> 
         public List<Card> GetPrincessDrinkCards()
         {
             List<Card> cardList = new List<Card>();
@@ -258,6 +286,9 @@ namespace Two_Server
             }
             return cardList;
         }
+        /// <summary> 
+        /// Returns a set of draw2, draw3 and targetted draw2 cards for deck creation
+        /// </summary> 
         public List<Card> GetDrawCards()
         {
             List<Card> cardList = new List<Card>();
@@ -314,6 +345,9 @@ namespace Two_Server
             }
             return cardList;
         }
+        /// <summary> 
+        /// Returns a set of skip and double down cards for deck creation
+        /// </summary> 
         public List<Card> GetPassCards()
         {
             List<Card> cardList = new List<Card>();
@@ -364,6 +398,9 @@ namespace Two_Server
             }
             return cardList;
         }
+        /// <summary> 
+        /// Returns a princess card for deck creation
+        /// </summary> 
         public List<Card> GetPrincessCard()
         {
             List<Card> cardList = new List<Card>();
@@ -381,6 +418,9 @@ namespace Two_Server
             cardList.Add(pf);
             return cardList;
         }
+        /// <summary> 
+        /// Returns a boom card for deck creation
+        /// </summary> 
         public List<Card> GetBoomCard()
         {
             List<Card> cardList = new List<Card>();
@@ -398,6 +438,9 @@ namespace Two_Server
             cardList.Add(bc);
             return cardList;
         }
+        /// <summary> 
+        /// Returns a gray for deck creation
+        /// </summary> 
         public List<Card> GetGrayCard()
         {
             List<Card> cardList = new List<Card>();
@@ -415,6 +458,9 @@ namespace Two_Server
             cardList.Add(gc);
             return cardList;
         }
+        /// <summary> 
+        /// Old card creation method - no longer using
+        /// </summary> 
         public List<Card> CardList()
         {
             List<Card> cardList = new List<Card>();
@@ -651,7 +697,10 @@ namespace Two_Server
 
 
         }
-
+        /// <summary> 
+        /// New deck creation method, uses settings in game options to get card counts and generates
+        /// an unshuffled deck, and sets the class deck variable to it
+        /// </summary> 
         public void CreateDeck()
         {
             DrawDeck = new Stack<Card>();
@@ -691,7 +740,9 @@ namespace Two_Server
                 inCards.RemoveAt(0);
             }
         }
-
+        /// <summary> 
+        /// Shuffles the deck
+        /// </summary> 
         public void ShuffleDeck()
         {
             Random random = new Random();
@@ -707,14 +758,15 @@ namespace Two_Server
                 tempDeck.RemoveAt(i);
             }
         }
-
+        /// <summary> 
+        /// The method, intended to be threaded as it is blocking, for recieving udp messages from clients,
+        /// and sending them to the parser
+        /// </summary> 
         private void RecieveUdp()
         {
             IPHostEntry localHostEntry;
             try
             {
-
-
                 localHostEntry = Dns.GetHostEntry(Dns.GetHostName());
             }
             catch (Exception)
@@ -753,12 +805,17 @@ namespace Two_Server
                 }
             }
         }
-
+        /// <summary> 
+        /// Adds text to the logbox, primarily for debugging
+        /// </summary> 
+        /// <param name="toAdd">The text to be added to the log box in the main menu</param> 
         public void AddText(string toAdd)
         {
             logBox.Text = toAdd +"\r\n" +logBox.Text;
         }
-
+        /// <summary> 
+        /// Prints the deck, in order, to the log box 
+        /// </summary> 
         public void PrintDeck()
         {
             foreach (Card c in DrawDeck)
@@ -766,6 +823,9 @@ namespace Two_Server
                 AddText(c.Name);
             }
         }
+        /// <summary> 
+        /// When the game ends, when there is a single player left, this will send them a drinks form
+        /// </summary> 
         public void FinishGame()
         {
             Player loser = null;
@@ -778,6 +838,10 @@ namespace Two_Server
                 SendToPlayer(loser, "TIMEDFORM 10 A loser is you. " + RandomTaunt() + ".");
             }
         }
+        /// <summary> 
+        /// The heartbeat tick to ensure that even if a udp message is lost, the current player will resync and
+        /// be able to continue
+        /// </summary> 
         public void SendStatus()
         {
             switch (GameState)
@@ -793,11 +857,22 @@ namespace Two_Server
                     break;
             }
         }
+        /// <summary> 
+        /// When a player plays a targetted card, the game state changes to allow them to choose a target for their
+        /// card. This method also sends out the message to be displayed to the player who must choose a target.
+        /// </summary> 
+        /// <param name="s">Parameter description for s goes here.</param> 
         public void WaitForPlayerTarget(String s)
         {
             GameState = 3;
             SendToPlayer(PlayerList.PlayerArray[PlayerList.Turn], String.Format("TARGETPLAYER {0}", s));
         }
+
+        /// <summary> 
+        /// The parser for the udp messages.
+        /// </summary> 
+        /// <param name="sender">The sender is the object sending the event  </param>
+        /// <param name="e">The udp event including the address of the sender </param> 
         private void UdpMessageListener(object sender, UdpEvent e)
         {
             AddTextFromThread("New message from: " + e.Address);
@@ -873,6 +948,13 @@ namespace Two_Server
                     break;
             }
         }
+
+        /// <summary> 
+        /// Method called when a player plays a card
+        /// </summary> 
+        /// <param name="player">The player that played a card </param>
+        /// <param name="card">The index of the card in the players hand </param>
+        /// <param name="cardArgs">If the card has arguments, eg a target, it is sent here </param> 
         public void PlayerPlayedCard(Player player, int card, string[] cardArgs)
         {
             if (PlayerList.Turn == player.playerNumber)
@@ -880,7 +962,9 @@ namespace Two_Server
                 player.CardsInHand[card].Execute(this, player, null);
             }
         }
-
+        /// <summary> 
+        /// Tidy up on close, kills threads, closes sockets etc
+        /// </summary> 
         private void Form1_Close(object sender, FormClosingEventArgs e)
         {
             IsRunning = false;
@@ -894,13 +978,19 @@ namespace Two_Server
             GameState = -1;
             _udpThread.Abort();
         }
-
+        /// <summary> 
+        /// Event argument to class pass udp information along with sender to the parser
+        /// </summary> 
         public class UdpEvent : EventArgs
         {
             public string Message;
             public EndPoint Address;
         }
 
+        /// <summary> 
+        /// Threads can't write to the logbox directly, this just invokes the addtext method
+        /// </summary>
+        /// <param name="message">Message to be added </param>
         private void AddTextFromThread(string message)
         {
             if (this.logBox.InvokeRequired)
@@ -908,7 +998,9 @@ namespace Two_Server
             else
                AddText( message);
         }
-
+        /// <summary> 
+        /// Returns a random taunt
+        /// </summary> 
         public string RandomTaunt()
         {
             Random r = new Random();
@@ -933,6 +1025,14 @@ namespace Two_Server
             return "";
 
         }
+
+        /// <summary> 
+        /// Makes a player pickup a number of cards (Obsolete)
+        /// </summary> 
+        ///         
+        /// <param name="noOfCards"> number of cards to be picked up </param>
+        /// <param name="p"> player to pick up cards</param>
+        /// <param name="s">String to be showed to player </param>
         public void PlayerPickupCard(int noOfCards, Player p, string s)
         {
             
@@ -949,7 +1049,9 @@ namespace Two_Server
             SendPlayerCards(p);
         }
 
-
+        /// <summary> 
+        /// Reshuffle the deck using the cards already played
+        /// </summary> 
         public void ReShuffle()
         {
             Card temp = DownDeck.Pop();
@@ -959,10 +1061,22 @@ namespace Two_Server
             ShuffleDeck();
             SendAnnounce("Deck shuffled! " + DrawDeck.Count + " cards remain.");
         }
+
+        /// <summary> 
+        /// Send a number of drinks to a player
+        /// </summary> 
+        /// <param name="p"> Player to get drinks</param>
+        /// <param name="noOfDrinks">Number of drinks to be sent </param>
         public void SendPlayerDrinks(Player p, int noOfDrinks)
         {
             SendToAllPlayers(string.Format("DRINK {0} {1}",p.playerNumber,noOfDrinks.ToString()));
         }
+
+        /// <summary> 
+        /// Make a player pick up a number of cards and send the infomation to all players
+        /// </summary>
+        /// <param name="noOfCards">Number of cards to pick up </param>
+        /// <param name="p"> Player to get cards</param>
         public void PlayerPickupCard(int noOfCards, Player p)
         {
             SendPlayerDrinks(p, noOfCards);
@@ -983,6 +1097,12 @@ namespace Two_Server
             SendToAllPlayers("ANIMATION CARDSTO " + p.playerNumber + " " + noOfCards);
             SendPlayerCards(p);
         }
+
+        /// <summary> 
+        /// Send a number of cards to a player without additional consequences, eg attached drinks
+        /// </summary>
+        /// <param name="noOfCards">Number of cards to be picked up </param>
+        /// <param name="p"> Player to get cards</param>
         public void PlayerPickupCardQuiet(int noOfCards, Player p)
         {
             for (int i = 0; i < noOfCards; i++)
@@ -996,10 +1116,19 @@ namespace Two_Server
 
             SendPlayerCards(p);
         }
+
+        /// <summary> 
+        /// Send an annoucement to be displayed by all players
+        /// </summary> 
+        /// <param name="toSend">Announcement to be sent </param>
         public void SendAnnounce(string toSend)
         {
             SendToAllPlayers("ANNOUNCE " + toSend);
         }
+        /// <summary> 
+        /// Send a player a list of their current cards
+        /// </summary> 
+        /// <param name="p"> player to recieve card list</param>
         public void SendPlayerCards(Player p)
         {
             p.CardsInHand.Sort();
@@ -1018,15 +1147,21 @@ namespace Two_Server
             }
             SendToAllPlayers("NUMBERCARDS " + p.playerNumber + " " + p.CardsInHand.Count());
         }
-
+        /// <summary> 
+        /// Event handler for clicking the startbutton
+        /// </summary>
         private void StartButton_Click(object sender, EventArgs e)
         {
             foreach (Player p in PlayerList.PlayerArray)
             {
-                SendToPlayer(p, "PLAYERNUMBER " + p.playerNumber);//HERHERHE
+                SendToPlayer(p, "PLAYERNUMBER " + p.playerNumber);//Final check to ensure every player knows their number
             }
             StartGame();
         }
+        /// <summary> 
+        /// Sends a message to all players
+        /// </summary>
+        /// <param name="toSend">Message to send to all players</param>
         public void SendToAllPlayers(string toSend)
         {
             foreach (Player p in PlayerList.PlayerArray)
@@ -1034,6 +1169,12 @@ namespace Two_Server
                 SendToPlayer( p, toSend);
             }
         }
+
+        /// <summary> 
+        /// Sends a message to a players
+        /// </summary>
+        /// <param name="p">Player to recieve message </param>
+        /// <param name="toSend">Message to send to player</param>
         public void SendToPlayer(Player p, string toSend)
         {
             if (p == null)
@@ -1043,17 +1184,23 @@ namespace Two_Server
             System.Text.UTF8Encoding  encoding=new System.Text.UTF8Encoding();
             _udpSocket.SendTo(encoding.GetBytes(toSend), p.Address );
         }
-
+        /// <summary> 
+        /// Event handler for clicking the reset button
+        /// </summary>
         private void resetButton_Click(object sender, EventArgs e)
         {
             RestartGame();
         }
-
+        /// <summary> 
+        /// Event handler for clicking the update button
+        /// </summary>
         private void updateButton_Click(object sender, EventArgs e)
         {
             topCardLabel.Text = DownDeck.Peek().Name;
         }
-
+        /// <summary> 
+        /// Event handler for clicking the pause button
+        /// </summary>
         private void _pauseButton_Click(object sender, EventArgs e)
         {
             TimedEventList[0].IsRunning = false;
@@ -1065,7 +1212,9 @@ namespace Two_Server
             _broadcastThread = new Thread(new ThreadStart(BroadcastServerThread));
             _broadcastThread.Start();
         }
-
+        /// <summary> 
+        /// Event handler for clicking the resume button
+        /// </summary>
         private void _resumeButton_Click(object sender, EventArgs e)
         {
             TimedEventList[0].Start();
@@ -1081,16 +1230,16 @@ namespace Two_Server
             }
             SendToAllPlayers(String.Format("TURN {0}",PlayerList.Turn.ToString()));
         }
-
+        /// <summary> 
+        /// Event handler for clicking the test button
+        /// </summary>
         private void button1_Click(object sender, EventArgs e)
         {
-            foreach (Player player in PlayerList.PlayerArray)
-            {
-                SendToPlayer(player, "PLAYERNUMBER " + player.playerNumber);
-            }
-            SendPlayerList();
+            
         }
-
+        /// <summary> 
+        /// Event handler for clicking the game options button
+        /// </summary>
         private void OptionsButton_Click(object sender, EventArgs e)
         {
             GameOptions g = new GameOptions();
