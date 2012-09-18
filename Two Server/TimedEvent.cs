@@ -5,6 +5,10 @@ using System.Threading;
 
 namespace Two_Server
 {
+    /// <summary>
+    /// Base class for an event that works in real time eg. seconds rather than in turns
+    /// 
+    /// </summary>
     public  class TimedEvent
     {
         public TwoServerWindow TwoServer;
@@ -42,6 +46,9 @@ namespace Two_Server
             }
         }
     }
+    /// <summary>
+    /// The status tick allows for the game to continue if packets fail to arrive, it sends the status of the game and all information needed for a player to play on
+    /// </summary>
     public class StatusTick : TimedEvent
     {
         public StatusTick(TwoServerWindow twoServer, float timeToEvent) : base(twoServer, timeToEvent)

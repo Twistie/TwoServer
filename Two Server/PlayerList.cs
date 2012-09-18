@@ -8,6 +8,10 @@ using System.Threading;
 
 namespace Two_Server
 {
+    /// <summary>
+    /// Contains information about players as well as an array of the players, and methods for
+    /// adding and accessing them
+    /// </summary>
     public class PlayerList
     {
         public Dictionary<string,int> AddressLookup = new Dictionary<string,int>();
@@ -24,11 +28,20 @@ namespace Two_Server
         private string _fufuName;
         private int _princessTurns = 0;
         readonly TwoServerWindow _twoServer;
-
+        /// <summary>
+        /// Constructor requires a link back to the twoserver that initialized it
+        /// </summary>
+        /// <param name="twoServ"></param>
         public PlayerList( TwoServerWindow twoServ)
         {
             _twoServer = twoServ;
         }
+        /// <summary>
+        /// Ensures that a player isn't already in the game and adds them
+        /// </summary>
+        /// <param name="playerAddress">IP address of player</param>
+        /// <param name="name">Name of player</param>
+        /// <returns>Boolean if the add was successful</returns>
         public Boolean AddPlayer( EndPoint playerAddress, string name)
         {
             if (!AddressLookup.ContainsKey(playerAddress.ToString()))
@@ -48,6 +61,11 @@ namespace Two_Server
                 return false;
             }
         }
+        /// <summary>
+        /// Swaps two players positions
+        /// </summary>
+        /// <param name="p1">Player 1 to be swapped</param>
+        /// <param name="p2">Player 2 to be swapped</param>
         public void SwapPlayer(int p1, int p2)
         {
             string p1String = "";
@@ -78,6 +96,11 @@ namespace Two_Server
             _twoServer.SendToPlayer(PlayerArray[p2], string.Format("PLAYERNUMBER {0}", p2));
             _twoServer.SendPlayerList();
         }
+        /// <summary>
+        /// Gets the next player in turn, skips players that are out. Also increments the princess timer.
+        /// </summary>
+        /// <param name="noOfTurns">Number of turns</param>
+        /// <returns>The next players whos turn it is</returns>
         public Player GetNextPlayer(int noOfTurns)
         {
             CheckFufu();
@@ -102,6 +125,10 @@ namespace Two_Server
             }
             return PlayerArray[tempTurn];
         }
+        /// <summary>
+        /// Actually changes the current turn
+        /// </summary>
+        /// <param name="noOfTurns"></param>
         public void NextPlayer(int noOfTurns)
         {
             CheckFufu();
@@ -128,11 +155,19 @@ namespace Two_Server
             _twoServer.SendToAllPlayers("TURN " + Turn);
             _twoServer.SendToAllPlayers(String.Format("GAMEANNOUNCE {0}'s turn", PlayerArray[Turn].Name));
         }
+        /// <summary>
+        /// Returns a random player (can be out of game already)
+        /// </summary>
+        /// <returns>A random player</returns>
         public Player GetRandomPlayer()
         {
             Random r = new Random();
             return PlayerArray[r.Next(0,NumberPlayers)];
         }
+        /// <summary>
+        /// Set the turn to a specific player by player number
+        /// </summary>
+        /// <param name="player">Player number to set to</param>
         public void SetPlayer( int player)
         {
             CheckFufu();
@@ -147,13 +182,18 @@ namespace Two_Server
             _twoServer.SendToAllPlayers("TURN " + Turn);
             _twoServer.SendToAllPlayers(String.Format("GAMEANNOUNCE {0}'s turn", PlayerArray[Turn].Name));
         }
+
+        /// <summary>
+        /// Event for when a player turns on their light
+        /// </summary>
+        /// <param name="p">Player that turned on their light</param>
         public void PlayerLight( Player p )
         {
             if( LightsOn == 0 )
             {
                 if( LightMaster == p.playerNumber)
                 {
-                    if (LastLight + 600000000 > DateTime.Now.Ticks)
+                    if (LastLight + 450000000 > DateTime.Now.Ticks)
                     {
                         
                         _twoServer.SendToPlayer(p,"ANNOUNCE Too soon!");
@@ -182,12 +222,16 @@ namespace Two_Server
                 PlayerTurnedOnLight( p);
             }
         }
+        //Checks whether fufu has expired and if so, unsets it
         public void CheckFufu()
         {
             _princessTurns++;
             if( _princessTurns > (PlayersRemaining-1) * 5+12)
                 UnsetFufu();
         }
+        /// <summary>
+        /// Once a lightmaster round has finished, this resets it back to default
+        /// </summary>
         public void ResetLightMaster()
         {
             foreach (Player player in PlayerArray)
@@ -210,11 +254,19 @@ namespace Two_Server
                 _twoServer.TimedEventList.Remove(t);
             }
         }
+        /// <summary>
+        /// Sets a players light to on for all players
+        /// </summary>
+        /// <param name="p">Player that turned on light</param>
         public void PlayerTurnedOnLight(Player p)
         {
             p.LightOn = true;
             _twoServer.SendToAllPlayers("LIGHTON " + p.playerNumber);
         }
+        /// <summary>
+        /// Deals with consequences of a failed lightmaster round
+        /// </summary>
+        /// <param name="p">Player that failed</param>
         public void PlayerFailedLight(Player p)
         {
             if( p.StillIn )
@@ -227,6 +279,12 @@ namespace Two_Server
                 _twoServer.SendAnnounce(String.Format("{0} failed hardcore at Lightmaster. Have a drink sunshine",p.Name));
             }
         }
+        /// <summary>
+        /// Removes a card from a players hand and removes them from the player pool if they're out of cards
+        
+        /// </summary>
+        /// <param name="p">Player with the card to remove</param>
+        /// <param name="c">Card to be removed</param>
         public void RemovePlayerCard(Player p, Card c )
         {
             p.CardsInHand.Remove(c);
@@ -237,6 +295,11 @@ namespace Two_Server
                 p.StillIn = false;
             }
         }
+
+        /// <summary>
+        /// Sets a player to fufu
+        /// </summary>
+        /// <param name="playerToFufu">Player to be made fufu</param>
         public void SetFufu( int playerToFufu)
         {
             _princessTurns = 0;
@@ -247,6 +310,9 @@ namespace Two_Server
             _twoServer.SendToAllPlayers(String.Format("NAME {0} {1}",playerToFufu,"Princess Fufu"));
             _twoServer.SendToAllPlayers(string.Format("COLOUR {0} 1", PlayerArray[_princessFufu].playerNumber.ToString()));
         }
+        /// <summary>
+        /// removes the fufu condition from whichever player it is set to
+        /// </summary>
         public void UnsetFufu()
         {
             if (_princessFufu == -1)
@@ -257,6 +323,9 @@ namespace Two_Server
             _princessFufu = -1;
 
         }
+        /// <summary>
+        /// Makes fufu drink
+        /// </summary>
         public void FufuDrink()
         {
             if( _princessFufu != -1 )

@@ -7,6 +7,9 @@ using System.Net.Sockets;
 
 namespace Two_Server
 {
+    /// <summary>
+    /// Container class for players
+    /// </summary>
     public class Player
     {
         public Boolean LightOn;

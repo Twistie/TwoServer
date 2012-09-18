@@ -1154,7 +1154,8 @@ namespace Two_Server
         {
             foreach (Player p in PlayerList.PlayerArray)
             {
-                SendToPlayer(p, "PLAYERNUMBER " + p.playerNumber);//Final check to ensure every player knows their number
+                //Final check to ensure every player knows their number
+                SendToPlayer(p, "PLAYERNUMBER " + p.playerNumber);
             }
             StartGame();
         }
