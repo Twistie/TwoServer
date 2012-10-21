@@ -49,7 +49,7 @@ namespace Two_Server
                 AddressLookup.Add(playerAddress.ToString(), NumberPlayers);
                 Player p = new Player();
                 p.Address = playerAddress;
-                p.playerNumber = NumberPlayers;
+                p.PlayerNumber = NumberPlayers;
                 p.Name = name;
                 PlayerArray.Add( p);
                 NumberPlayers++;
@@ -89,8 +89,8 @@ namespace Two_Server
             PlayerArray[p1] = PlayerArray[p2];
             PlayerArray[p2] = holderPlayer;
 
-            PlayerArray[p1].playerNumber = p1;
-            PlayerArray[p2].playerNumber = p2;
+            PlayerArray[p1].PlayerNumber = p1;
+            PlayerArray[p2].PlayerNumber = p2;
 
             _twoServer.SendToPlayer(PlayerArray[p1], string.Format("PLAYERNUMBER {0}", p1));
             _twoServer.SendToPlayer(PlayerArray[p2], string.Format("PLAYERNUMBER {0}", p2));
@@ -191,7 +191,7 @@ namespace Two_Server
         {
             if( LightsOn == 0 )
             {
-                if( LightMaster == p.playerNumber)
+                if( LightMaster == p.PlayerNumber)
                 {
                     if (LastLight + 450000000 > DateTime.Now.Ticks)
                     {
@@ -237,7 +237,7 @@ namespace Two_Server
             foreach (Player player in PlayerArray)
             {
                 player.LightOn = false;
-                _twoServer.SendToAllPlayers("LIGHTOFF " + player.playerNumber);
+                _twoServer.SendToAllPlayers("LIGHTOFF " + player.PlayerNumber);
             }
             LightsOn = 0;
             List<TimedEvent> toRemove = new List<TimedEvent>();
@@ -261,7 +261,7 @@ namespace Two_Server
         public void PlayerTurnedOnLight(Player p)
         {
             p.LightOn = true;
-            _twoServer.SendToAllPlayers("LIGHTON " + p.playerNumber);
+            _twoServer.SendToAllPlayers("LIGHTON " + p.PlayerNumber);
         }
         /// <summary>
         /// Deals with consequences of a failed lightmaster round
@@ -308,7 +308,7 @@ namespace Two_Server
             _fufuName = PlayerArray[playerToFufu].Name;
             _princessFufu = playerToFufu;
             _twoServer.SendToAllPlayers(String.Format("NAME {0} {1}",playerToFufu,"Princess Fufu"));
-            _twoServer.SendToAllPlayers(string.Format("COLOUR {0} 1", PlayerArray[_princessFufu].playerNumber.ToString()));
+            _twoServer.SendToAllPlayers(string.Format("COLOUR {0} 1", PlayerArray[_princessFufu].PlayerNumber.ToString()));
         }
         /// <summary>
         /// removes the fufu condition from whichever player it is set to
@@ -319,7 +319,7 @@ namespace Two_Server
                 return;
             PlayerArray[_princessFufu].Name = _fufuName;
             _twoServer.SendToAllPlayers(String.Format("NAME {0} {1}",_princessFufu,_fufuName));
-            _twoServer.SendToAllPlayers(string.Format("COLOUR {0} 0", PlayerArray[_princessFufu].playerNumber.ToString()));
+            _twoServer.SendToAllPlayers(string.Format("COLOUR {0} 0", PlayerArray[_princessFufu].PlayerNumber.ToString()));
             _princessFufu = -1;
 
         }
@@ -330,7 +330,7 @@ namespace Two_Server
         {
             if( _princessFufu != -1 )
            // _twoServer.PlayerPickupCard(2, PlayerArray[_princessFufu]);
-                _twoServer.SendToPlayer(PlayerArray[_princessFufu], "TIMEDFORM 6 Time to drink, Princess!");
+                _twoServer.SendDrinkForm(PlayerArray[_princessFufu],5.0f,"Time to drink, Princess");
         }
     }
 }

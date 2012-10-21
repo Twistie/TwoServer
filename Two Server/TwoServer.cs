@@ -43,7 +43,7 @@ namespace Two_Server
 
 
         /// <summary> 
-        /// Constructor for TwoServerWindow, creates udp receptor thread and creates listening soctets, spawns
+        /// Constructor for TwoServerWindow, creates udp receptor thread and creates listening sockets, spawns
         /// a game options window, and prepares the server to accept clients
         /// </summary> 
         public TwoServerWindow()
@@ -147,7 +147,7 @@ namespace Two_Server
             SendToAllPlayers("TOPCARD " + DownDeck.Peek().SortValue);
             foreach( Player p in PlayerList.PlayerArray)
             {
-                SendToAllPlayers("ANIMATION CARDSTO "+p.playerNumber + " 7");
+                SendToAllPlayers("ANIMATION CARDSTO "+p.PlayerNumber + " 7");
             }
         }
         /// <summary> 
@@ -205,9 +205,21 @@ namespace Two_Server
                         break;
                 }
 
-                for (int n = 0; n < 9; n++)
+                for (int n = 0; n < 6; n++) //can be up to 9
                 {
-                    Card c = new Card();
+                    Card c;
+                    switch( n )
+                    {
+                        case 0:
+                            c = new MooseCard();
+                            break;
+                        case 2:
+                            c = new TwoForYouCard();
+                            break;
+                        default:
+                            c = new Card();
+                            break;
+                    }
                     c.Name = colour + " " + n;
                     c.SortValue = double.Parse(i + ".0" + n);
                     c.Types.Add(colour);
@@ -705,7 +717,8 @@ namespace Two_Server
         {
             DrawDeck = new Stack<Card>();
             
-            List<Card> inCards = CardList();
+            List<Card> inCards = new List<Card>();
+
             for (int i = 0; i < GameOption.NumberCards; i++ )
                 inCards.AddRange(GetNumberCards());
 
@@ -835,7 +848,7 @@ namespace Two_Server
                 {
                     loser = p;
                 }
-                SendToPlayer(loser, "TIMEDFORM 10 A loser is you. " + RandomTaunt() + ".");
+                SendToPlayer(loser, "TIMEDFORM 10 " + p.PlayerNumber + " A loser is you. " + RandomTaunt() + ".");
             }
         }
         /// <summary> 
@@ -867,6 +880,36 @@ namespace Two_Server
             GameState = 3;
             SendToPlayer(PlayerList.PlayerArray[PlayerList.Turn], String.Format("TARGETPLAYER {0}", s));
         }
+        /// <summary>
+        /// When a player plays a moose card this sets the game ready to judge the moose competition
+        /// </summary>
+        public void WaitForMoose()
+        {
+            GameState = 4;
+            SendToAllPlayers( "MOOSE");
+        }
+        
+
+        public void DoMoose( Player p )
+        {
+            bool lastPlace = true;
+            foreach( Player pl in PlayerList.PlayerArray )
+            {
+                if (pl != p && !pl.MOOSE)
+                    lastPlace = false;
+            }
+            if (!lastPlace)
+                p.MOOSE = true;
+            else
+            {
+                foreach( Player pl in PlayerList.PlayerArray)
+                {
+                    pl.MOOSE = false;
+                }
+                SendDrinkForm(p,8,"YOU ARE THE MOOSE, MOTHEFUCKER");
+                GameState = 1;
+            }
+        }
 
         /// <summary> 
         /// The parser for the udp messages.
@@ -891,7 +934,7 @@ namespace Two_Server
                         AddTextFromThread("Player added: " + PlayerList.AddPlayer(e.Address,e.Message.Remove(0,5)).ToString());
                         foreach( Player player in PlayerList.PlayerArray)
                         {
-                            SendToPlayer(player, "PLAYERNUMBER " + player.playerNumber );
+                            SendToPlayer(player, "PLAYERNUMBER " + player.PlayerNumber );
                         }
                         SendPlayerList();
                         SendToAllPlayers("LOBBY");
@@ -900,7 +943,7 @@ namespace Two_Server
                         AddTextFromThread("Player joined: " + PlayerList.AddPlayer(e.Address, e.Message.Remove(0, 5)).ToString());
                         foreach (Player player in PlayerList.PlayerArray)
                         {
-                            SendToPlayer(player, "PLAYERNUMBER " + player.playerNumber);
+                            SendToPlayer(player, "PLAYERNUMBER " + player.PlayerNumber);
                         }
                         SendPlayerList();
                         _usersConnected.PlayerJoined(PlayerList.AddressLookup[e.Address.ToString()]);
@@ -910,11 +953,15 @@ namespace Two_Server
                 case "CARD":
                     
                     PlayerPlayedCard( p, int.Parse( messageArray[1] ), messageArray);
-                    SendToAllPlayers("ANIMATION CARDSFROM " + p.playerNumber + " 1");
+                    SendToAllPlayers("ANIMATION CARDSFROM " + p.PlayerNumber + " 1");
                     break;
                 case "DRAWCARD":
                     DownDeck.Peek().OnDraw(this, p, messageArray);
                     
+                    break;
+                case "MOOSE":
+                    if( GameState == 4)
+                        DoMoose(p);
                     break;
                 case "CARDARGS":
                     if(GameState == 3)
@@ -941,11 +988,46 @@ namespace Two_Server
                     SendAnnounce(e.Message.Remove(0,8));
                     break;
                 case "DRINKRESET":
-                    SendToAllPlayers(String.Format("SETDRINK {0} 0",p.playerNumber.ToString()));
+                    SendToAllPlayers(String.Format("SETDRINK {0} 0",p.PlayerNumber.ToString()));
                     break;
                 case "DRUNK":
                     SendPlayerDrinks(p, -1);
                     break;
+                case "STARTDRINK":
+                    SendToAllPlayers("STARTDRINK " + p.PlayerNumber);
+                    break;
+                case "DRINKSFORM":
+                    SendToAllPlayers("TIMEDFORM " + messageArray[1] + " " + p.PlayerNumber + " Too many drinks backed up for " + p.Name + "!!");
+                    break;
+            }
+        }
+
+        /// <summary>
+        /// Sends a drink form to a player
+        /// </summary>
+        /// <param name="p">Player to get the form</param>
+        /// <param name="drinkTime"> Length of drinks </param>
+        /// <param name="message">Message to be sent (to all players for now )</param>
+        public void SendDrinkForm(Player p, float drinkTime, string message )
+        {
+            SendToAllPlayers( string.Format("TIMEDFORM {0} {1} {2}",drinkTime,p.PlayerNumber,message));
+        }
+
+        /// <summary>
+        /// Sends a drink form to a player
+        /// </summary>
+        /// <param name="p">Player to get the form</param>
+        /// <param name="drinkTime"> Length of drinks </param>
+        /// <param name="message">Message to be sent (to all players for now )</param>
+        /// <param name="messageToOthers">Alternate message to send to other players </param>
+        public void SendDrinkForm(Player p, float drinkTime, string message, string messageToOthers)
+        {
+            foreach (Player cur in PlayerList.PlayerArray)
+            {
+                if( cur != p )
+                    SendToPlayer(cur, string.Format("TIMEDFORM {0} {1} {2}",drinkTime,p.PlayerNumber,messageToOthers));
+                else
+                    SendToPlayer(cur, string.Format("TIMEDFORM {0} {1} {2}", drinkTime, p.PlayerNumber, message));
             }
         }
 
@@ -957,13 +1039,13 @@ namespace Two_Server
         /// <param name="cardArgs">If the card has arguments, eg a target, it is sent here </param> 
         public void PlayerPlayedCard(Player player, int card, string[] cardArgs)
         {
-            if (PlayerList.Turn == player.playerNumber)
+            if (PlayerList.Turn == player.PlayerNumber)
             {
                 player.CardsInHand[card].Execute(this, player, null);
             }
         }
         /// <summary> 
-        /// Tidy up on close, kills threads, closes sockets etc
+        /// Tidy up on close, allows threads to terminate, closes sockets etc
         /// </summary> 
         private void Form1_Close(object sender, FormClosingEventArgs e)
         {
@@ -1020,7 +1102,6 @@ namespace Two_Server
                     return "There once was a down-syndromed dyslexic blind crippled Amish hooker. They were better at this game than you.";
                 case 6:
                     return "Even a ranga wouldn't suck this bad";
-
             }
             return "";
 
@@ -1069,7 +1150,7 @@ namespace Two_Server
         /// <param name="noOfDrinks">Number of drinks to be sent </param>
         public void SendPlayerDrinks(Player p, int noOfDrinks)
         {
-            SendToAllPlayers(string.Format("DRINK {0} {1}",p.playerNumber,noOfDrinks.ToString()));
+            SendToAllPlayers(string.Format("DRINK {0} {1}",p.PlayerNumber,noOfDrinks.ToString()));
         }
 
         /// <summary> 
@@ -1094,7 +1175,7 @@ namespace Two_Server
                 }
                 p.CardsInHand.Add(DrawDeck.Pop());
             }
-            SendToAllPlayers("ANIMATION CARDSTO " + p.playerNumber + " " + noOfCards);
+            SendToAllPlayers("ANIMATION CARDSTO " + p.PlayerNumber + " " + noOfCards);
             SendPlayerCards(p);
         }
 
@@ -1134,7 +1215,7 @@ namespace Two_Server
             p.CardsInHand.Sort();
             for (int i = 0; i <= PlayerList.NumberPlayers; i++)
             {
-                if (p.playerNumber == i)
+                if (p.PlayerNumber == i)
                 {
                     string toSend = "CARDLIST " + p.CardsInHand.Count;
                     foreach (Card c in p.CardsInHand)
@@ -1145,7 +1226,7 @@ namespace Two_Server
                     SendToPlayer(p, toSend);
                 }
             }
-            SendToAllPlayers("NUMBERCARDS " + p.playerNumber + " " + p.CardsInHand.Count());
+            SendToAllPlayers("NUMBERCARDS " + p.PlayerNumber + " " + p.CardsInHand.Count());
         }
         /// <summary> 
         /// Event handler for clicking the startbutton
@@ -1155,7 +1236,7 @@ namespace Two_Server
             foreach (Player p in PlayerList.PlayerArray)
             {
                 //Final check to ensure every player knows their number
-                SendToPlayer(p, "PLAYERNUMBER " + p.playerNumber);
+                SendToPlayer(p, "PLAYERNUMBER " + p.PlayerNumber);
             }
             StartGame();
         }
@@ -1226,7 +1307,7 @@ namespace Two_Server
             GameState = 1;
             foreach (Player p in PlayerList.PlayerArray)
             {
-                SendToPlayer(p, String.Format("PLAYERNUMBER {0}", p.playerNumber.ToString()));
+                SendToPlayer(p, String.Format("PLAYERNUMBER {0}", p.PlayerNumber.ToString()));
                 SendPlayerCards(p);
             }
             SendToAllPlayers(String.Format("TURN {0}",PlayerList.Turn.ToString()));
@@ -1236,6 +1317,7 @@ namespace Two_Server
         /// </summary>
         private void button1_Click(object sender, EventArgs e)
         {
+            SendToAllPlayers("TIMEDFORM 8 1 TESTTEST");
             
         }
         /// <summary> 

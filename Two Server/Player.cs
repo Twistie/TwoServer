@@ -16,7 +16,8 @@ namespace Two_Server
         public EndPoint Address;
         public List<Card> CardsInHand = new List<Card>();
         public Boolean StillIn = true;
-        public int playerNumber;
+        public int PlayerNumber;
         public string Name;
+        public Boolean MOOSE = false;
     }
 }

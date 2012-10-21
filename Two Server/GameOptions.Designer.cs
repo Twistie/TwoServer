@@ -152,7 +152,7 @@
             this.NumberSpinner.Size = new System.Drawing.Size(29, 20);
             this.NumberSpinner.TabIndex = 7;
             this.NumberSpinner.Value = new decimal(new int[] {
-            2,
+            3,
             0,
             0,
             0});
@@ -178,7 +178,7 @@
             this.DrawSpinner.Size = new System.Drawing.Size(29, 20);
             this.DrawSpinner.TabIndex = 9;
             this.DrawSpinner.Value = new decimal(new int[] {
-            2,
+            1,
             0,
             0,
             0});
@@ -204,7 +204,7 @@
             this.PrincessSpinner.Size = new System.Drawing.Size(31, 20);
             this.PrincessSpinner.TabIndex = 11;
             this.PrincessSpinner.Value = new decimal(new int[] {
-            7,
+            8,
             0,
             0,
             0});
@@ -230,7 +230,7 @@
             this.PrincessDrinkSpinner.Size = new System.Drawing.Size(31, 20);
             this.PrincessDrinkSpinner.TabIndex = 13;
             this.PrincessDrinkSpinner.Value = new decimal(new int[] {
-            10,
+            4,
             0,
             0,
             0});
@@ -308,7 +308,7 @@
             this.GraySpinner.Size = new System.Drawing.Size(29, 20);
             this.GraySpinner.TabIndex = 19;
             this.GraySpinner.Value = new decimal(new int[] {
-            2,
+            12,
             0,
             0,
             0});
@@ -377,7 +377,7 @@
             this.LightMasterSpinner.Size = new System.Drawing.Size(30, 20);
             this.LightMasterSpinner.TabIndex = 21;
             this.LightMasterSpinner.Value = new decimal(new int[] {
-            4,
+            6,
             0,
             0,
             0});
